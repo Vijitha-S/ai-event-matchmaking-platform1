@@ -1,0 +1,220 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kqs_aMZ4FZUt8D_Kx8yLR5b1SLe_EenQkh7VsaeAY6w",
+          "mode": "list",
+          "cachedResultName": "Untitled spreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kqs_aMZ4FZUt8D_Kx8yLR5b1SLe_EenQkh7VsaeAY6w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kqs_aMZ4FZUt8D_Kx8yLR5b1SLe_EenQkh7VsaeAY6w/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -440,
+        -160
+      ],
+      "id": "4c2cbe60-0ca3-439a-a5ae-7004e5eb272b",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zxFb2iuZxXNm8U7D",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are an intelligent matchmaking assistant for a virtual event platform. Based on interests, find the top 2 most relevant attendees for networking with this person.\n\nNew Attendee: {{$node[\"Set\"].json[\"name\"]}}  \nInterests: {{$node[\"Set\"].json[\"interests\"]}}\n\nOther Attendees:  \n{{ $items(\"Google Sheets\").map(att => `${att.json.name}: ${att.json.interests}`).join('\\n') }}\n\nReply only with:  \nmatch1_name: Name  \nmatch2_name: Name\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        100,
+        -160
+      ],
+      "id": "f3c0536e-d6b8-4576-b18d-1259249cf541",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "vijithas799@gmail.com",
+        "subject": "matchmaking",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        460,
+        20
+      ],
+      "id": "a907130a-855f-4f45-9f9e-de80555218e2",
+      "name": "Send a message",
+      "webhookId": "b2428b00-a94e-4808-95a3-10b59bb43c04",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UBe85xeC3qwmGNvp",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        20,
+        40
+      ],
+      "id": "3f5c2901-f953-429b-8afb-c8f0f6bbace0",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "sRH1NzXKZhoJRG04",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const people = [\n  {\n    name: \"Alice Johnson\",\n    email: \"alice@email.com\",\n    industry: \"Tech\",\n    interests: [\"AI\", \"Machine Learning\"]\n  },\n  {\n    name: \"Bob Smith\",\n    email: \"bob@email.com\",\n    industry: \"Marketing\",\n    interests: [\"Events\", \"Social Media\"]\n  },\n  {\n    name: \"Charlie Lee\",\n    email: \"charlie@email.com\",\n    industry: \"Tech\",\n    interests: [\"AI\", \"Programming\"]\n  },\n  {\n    name: \"Dana Kapoor\",\n    email: \"dana@email.com\",\n    industry: \"SaaS\",\n    interests: [\"Startups\", \"UX Design\"]\n  },\n  {\n    name: \"Ethan Brown\",\n    email: \"ethan@email.com\",\n    industry: \"HR\",\n    interests: [\"Networking\", \"Hiring Events\"]\n  }\n];\n\nconst results = [];\n\nfor (let i = 0; i < people.length; i++) {\n  for (let j = i + 1; j < people.length; j++) {\n    const p1 = people[i];\n    const p2 = people[j];\n\n    const sharedInterests = p1.interests.filter(interest => p2.interests.includes(interest));\n    const sameIndustry = p1.industry === p2.industry;\n\n    if (sharedInterests.length > 0 || sameIndustry) {\n      results.push({\n        json: {\n          person1: p1.name,\n          person2: p2.name,\n          sharedInterests: sharedInterests,\n          sameIndustry: sameIndustry,\n        }\n      });\n    }\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        -160
+      ],
+      "id": "483cfe1f-d665-4e17-86ee-a904c9a64f96",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst formattedItems = items.map((item) => {\n  let email = item?.json?.email;\n  if (email) {\n    email = email.replace(/[*\\/]/g, \"\");\n    item.json.email = email;\n  }\n  return item;\n});\nreturn formattedItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        -160
+      ],
+      "id": "c62f200b-8374-428b-8354-c0ac50f19173",
+      "name": "Code1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        0
+      ],
+      "id": "7cafb455-b85f-4505-95db-6ea25da81c7a",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "625b1481-5a24-455e-ac06-eff762505951",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "522d15bc207aca4bdb0279efadec011fe8e6ad2a9497b6622b8226f296508374"
+  },
+  "id": "Wl12nCkqKBbtmxgV",
+  "tags": []
+}
